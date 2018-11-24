@@ -8,7 +8,6 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
-#include "spline.h"
 
 using namespace std;
 
@@ -182,7 +181,6 @@ int main() {
   ifstream in_map_(map_file_.c_str(), ifstream::in);
 
   string line;
-
   while (getline(in_map_, line)) {
   	istringstream iss(line);
   	double x;
@@ -246,104 +244,6 @@ int main() {
 
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-
-            double ref_x = car_x; 
-            double ref_y = car_y; 
-            cout << "car_yaw: " << car_yaw << endl;
-            double ref_yaw= deg2rad(car_yaw); 
-            //double ref_yaw = car_yaw; 
-
-
-            //define 2 first xy anchors as tangent to car current position
-            double prev_car_x = car_x - cos(ref_yaw); 
-            double prev_car_y = car_y - sin(ref_yaw);
-            double next_car_x = car_x + cos(ref_yaw); 
-            double next_car_y = car_y + sin(ref_yaw);
-            vector<double> ptsx; 
-            vector<double> ptsy; 
-            ptsx.push_back(prev_car_x);
-            ptsx.push_back(car_x);
-            //ptsx.push_back(next_car_x);
-            ptsy.push_back(prev_car_y);
-            ptsy.push_back(car_y); 
-            //ptsy.push_back(next_car_y); //WHY THE FUCK DOES THIS NOT WORK !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            cout << "ref_yaw: " << ref_yaw << endl;
-            cout << "angle of two points: " << atan2(next_car_y - car_y, next_car_x-car_x) <<endl;
-            cout << "curr x and y: (" << car_x <<","<<car_y<<")"<<endl;
-            //generate s and d anchors
-            double lane = 1;
-            vector<double> s = {car_s+30, car_s+60, car_s+90} ; 
-            vector<double> d = {2+4*lane, 2+4*lane, 2+4*lane } ;
-            for (size_t i =0; i<s.size(); i++){
-              vector<double> xy = getXY(s[i], d[i],map_waypoints_s,map_waypoints_x,map_waypoints_y);
-              ptsx.push_back(xy[0]);
-              ptsy.push_back(xy[1]);
-             }
-
-             cout << "anchor coordinates before transform to car FOR" << endl;
-             for (size_t i =0; i<ptsx.size(); i++){
-              cout << "x: " << ptsx[i] << " ";
-              cout << "y: " << ptsy[i] << endl;
-             }
-            
-            //change frame of reference of xy anchors to car's FOR.
-            for(size_t i = 0; i<ptsx.size(); i ++){
-              double shift_x = ptsx[i] - ref_x; //ref_x = car_x 
-              double shift_y = ptsy[i] - ref_y; 
-              ptsx[i] = (shift_x*cos(-ref_yaw) - shift_y*sin(-ref_yaw)); //ref_yaw = deg2rad(car_yaw); 
-              ptsy[i] = (shift_x*sin(-ref_yaw) + shift_y*cos(-ref_yaw));
-            } 
-
-            cout << "anchor coordinates after transform to cars FOR" << endl;
-             for (size_t i =0; i<ptsx.size(); i++){
-              cout << "x: "  << ptsx[i] << " ";
-              cout << "y: "  << ptsy[i] << endl;
-             }
-
-             cout << "\n\n\n" << endl;
-
-            //spline we will use to interpolate actual next x and y points
-            cout<<"setting up the spline points"<<endl;
-            tk::spline sp; 
-            sp.set_points(ptsx,ptsy);
-
-            //generate next x and next y from spline
-            double delta_t = .02; 
-            double vel = 15; //velocity in mps
-            double distx = 30; //length of the path on x axis
-            double disty = sp(distx);
-            double D = sqrt(     pow(distx,2) + pow(disty,2)     );
-            //cout<<"pow(distx,2) "<<pow(distx,2)<<"pow(disty,2) "<<pow(disty,2)<<endl; 
-
-            double N = D/(vel*delta_t); //number of points to generate on x axis; 
-            double delt_x = distx/N ;
-            //cout << "delt_x: " << delt_x << endl;
-            double x_add_on = 0; 
-            //cout << "num  points " << N << endl;
-            for (unsigned int i = 0; i<50; i++){
-              double x_point = x_add_on + delt_x ;
-              double y_point = sp(x_point);   
-
-              x_add_on = x_point;     
-
-              double x_ref =  x_point;
-              double y_ref =  y_point;
-
-              x_point = (x_ref* cos(ref_yaw) -y_ref * sin(ref_yaw));
-              y_point = (x_ref* cos(ref_yaw) +y_ref * cos(ref_yaw)); 
-
-              x_point += ref_x;
-              y_point += ref_y; 
-
-
-              next_x_vals.push_back(x_point);
-              next_y_vals.push_back(y_point);
-
-              cout << "wrote: ("<< x_point<<","<<y_point<<")" << endl ;
-              
-            }
-
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
 
