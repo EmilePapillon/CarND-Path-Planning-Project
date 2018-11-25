@@ -253,6 +253,7 @@ int main() {
             }
 
             bool too_close= false; 
+            double tgt_speed = 49.5; 
             bool car_left= false;
             bool car_right= false;
 
@@ -273,6 +274,15 @@ int main() {
                 if ((check_car_s > car_s) && (check_car_s - car_s ) < 30) 
                 {
                   too_close =true; 
+                  tgt_speed = check_speed;
+                  cout<<"too_close= true"<<endl;
+                } else if ( (check_car_s > car_s) && (check_car_s - car_s ) > 40 )
+                {
+                  tgt_speed = check_speed;
+                }
+                else
+                {
+                  tgt_speed = 49.5;
                 }
               }
               else if (d < (2+4*lane+2) -4 && d > (2+4*lane-2) -4) 
@@ -284,7 +294,7 @@ int main() {
 
                 check_car_s += ((double)prev_size*.02*check_speed); //if using previous points can project s value out
                 //check s value greater than mine and s gap 
-                if (abs(check_car_s - car_s ) < 30) 
+                if (  ( (check_car_s > car_s) &&  ((check_car_s - car_s ) < 30) ) || ( (check_car_s < car_s) && ((check_car_s - car_s ) > -5 ) )  ) 
                 {
                   car_left =true;
                   cout << "there is a car to the left" << endl;
@@ -300,7 +310,7 @@ int main() {
 
                 check_car_s += ((double)prev_size*.02*check_speed); //if using previous points can project s value out
                 //check s value greater than mine and s gap 
-                if (abs(check_car_s - car_s ) < 30) 
+                if ( ( (check_car_s > car_s) &&  ((check_car_s - car_s ) < 30) ) || ( (check_car_s < car_s) && ((check_car_s - car_s ) > -5 ) ) ) 
                 {
                   car_right =true; 
                   cout << "there is a car to the right" << endl;
@@ -417,7 +427,7 @@ int main() {
               {
                 ref_vel -= .224; 
               }
-              else if (ref_vel < 49.5)
+              else if (ref_vel <tgt_speed && ref_vel < 49.5)
               {
                 ref_vel += .224;
               }
