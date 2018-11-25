@@ -275,7 +275,7 @@ int main() {
                 {
                   too_close =true; 
                   tgt_speed = check_speed;
-                  cout<<"too_close= true"<<endl;
+                  //cout<<"too_close= true"<<endl;
                 } else if ( (check_car_s > car_s) && (check_car_s - car_s ) > 40 )
                 {
                   tgt_speed = check_speed;
@@ -297,7 +297,7 @@ int main() {
                 if (  ( (check_car_s > car_s) &&  ((check_car_s - car_s ) < 30) ) || ( (check_car_s < car_s) && ((check_car_s - car_s ) > -5 ) )  ) 
                 {
                   car_left =true;
-                  cout << "there is a car to the left" << endl;
+                  //cout << "there is a car to the left" << endl;
                 }
               }
 
@@ -313,7 +313,7 @@ int main() {
                 if ( ( (check_car_s > car_s) &&  ((check_car_s - car_s ) < 30) ) || ( (check_car_s < car_s) && ((check_car_s - car_s ) > -5 ) ) ) 
                 {
                   car_right =true; 
-                  cout << "there is a car to the right" << endl;
+                  //cout << "there is a car to the right" << endl;
                 }
               }
 

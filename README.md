@@ -1,6 +1,66 @@
 # CarND-Path-Planning-Project
-Self-Driving Car Engineer Nanodegree Program
-   
+Self-Driving Car Engineer Nanodegree Program 
+
+## My Solution to the path planning project
+
+### Scope
+This project intends to show the capability in generating a path that meets the following criteria :
+
+- The car is able to drive at least 4.32 miles without incident.
+- The car drives according to the speed limit.
+- Max Acceleration and Jerk are not Exceeded.
+- Car does not have collisions.
+- The car stays in its lane, except for the time between changing lanes.
+- The car is able to change lanes.
+
+### Implementation strategy
+#### Generating Waypoints
+The logic is found between lines 345 and 400 of file `/main.cpp`. 
+Generating a trajectory that follows the road geometry can be challenging in x-y cartesian coordinates, because the road geometry can be arbitrary and hard to model mathematically. Using Frenet coordinates (s-d) can help us solve this challenge.
+
+The current implementation uses Frenet coordinates to generate trajectory points relative to lane markings using the available map data. It is also straightforward to generate a trajectory for a lane change in the Frenet space. 
+
+The points are selected as follows : 
+
+- Two points tangent to the car's current trajectory : 
+  - if there are less than 2 points remaining in the previous trajectory, uses the car's current position and a projected point 1 step before the current 
+  - if there are more than 2 points remaining in previous trajectory : use previous trajectory to get two points tangent to current position
+- three points tangent to desired end position (goal) - these points have the following characteristic : 
+   - spacing of 30 meters on the s axis : 30, 60 and 90. 
+   - d values depend of target lane. The lane width is 4 meters and the reference starts at zero on leftmost lane marking, so the d position corresponding to the center of lane `lane` is given by: `2+4*lane` as implemented on lines 378-380. 
+
+#### Making a Smooth Trajectory
+The logic is found between lines 400 and 455 of file `/main.cpp`. 
+The waypoints available from the map data are sparse and if they were used directly would result in a jerky, rough trajectory with sharp angles. To resolve this issue, interpolation between points is used to smooth out the trajectory. This is achieved with splines (implemeted in the single header file: `spline.h`) using the coarse waypoints previously generated to cast a piecewise spline. The resulting spline can be used to generate any number of points defining a smooth path. 
+
+In the current solution the following parameters have been used to smooth out the trajectory :
+
+- Number of coarse anchors (waypoints) : 5
+- Number of points in the smoothed trajectory : 50
+
+#### Logic to change lane avoiding collision
+The logic is found between lines 265 and 320 of file `/main.cpp`.  
+A relatively simplistic approach was used here. First, if there are no cars in front of us we adjust speed to the speed limit. If a car is detected in front of us, we adjust the speed to this car's speed and we attempt a lane change to the right. If a car is also present on the right, we attempt a lane change to the left. If there are cars on both sides, we keep the current lane - continuously pacing behind leading car - until a lane is free.
+
+A lane is considered "occupied" by a car if: 
+- A car is present in this lane (`ego_lane - 1` for left lane or `ego_lane +1`) in the space between 5 meters behind or 30 meters in front of the ego current position.
+
+The following code implements this : 
+
+```cpp
+if (d < (2+4*(lane-1)+2) && d > (2+4*(lane-1)-2) ) 
+{
+  if (  ( (check_car_s > car_s) &&  ((check_car_s - car_s ) < 30) ) || ( (check_car_s < car_s) && ((check_car_s - car_s ) > -5 ) )  )
+  {
+    car_left =true;
+  }
+}
+```
+
+This logic works for the extent of the current exercise but it is limited to very specific maneuvers and there is no cost function. A cost function would give us more flexibility and smarter decision making. 
+
+## Original Readme contents
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
 
