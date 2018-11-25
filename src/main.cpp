@@ -205,7 +205,7 @@ int main() {
   int lane = 1;
 
   //target velocity
-  double ref_vel = 49.5; //mph
+  double ref_vel = 0.0 ; //mph
 
   h.onMessage([&ref_vel, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
@@ -246,6 +246,78 @@ int main() {
 
             //size of the previous path
             int prev_size = previous_path_x.size();
+
+            if (prev_size > 0)
+            {
+              car_s = end_path_s; 
+            }
+
+            bool too_close= false; 
+            bool car_left= false;
+            bool car_right= false;
+
+            //find ref_v to use
+            for (int i = 0; i< sensor_fusion.size(); i++ )
+            {
+              // car is in my lane
+              float d = sensor_fusion[i][6]; //d value is index 6
+              if (d < (2+4*lane+2) && d > (2+4*lane-2) )
+              {
+                double vx = sensor_fusion[i][3];
+                double vy = sensor_fusion[i][ 4];
+                double check_speed = sqrt(vx*vx+vy*vy); 
+                double check_car_s = sensor_fusion[i][5]; 
+
+                check_car_s += ((double)prev_size*.02*check_speed); //if using previous points can project s value out
+                //check s value greater than mine and s gap 
+                if ((check_car_s > car_s) && (check_car_s - car_s ) < 30) 
+                {
+                  too_close =true; 
+                }
+              }
+              else if (d < (2+4*lane+2) -4 && d > (2+4*lane-2) -4) 
+              {
+                double vx = sensor_fusion[i][3];
+                double vy = sensor_fusion[i][ 4];
+                double check_speed = sqrt(vx*vx+vy*vy); 
+                double check_car_s = sensor_fusion[i][5]; 
+
+                check_car_s += ((double)prev_size*.02*check_speed); //if using previous points can project s value out
+                //check s value greater than mine and s gap 
+                if (abs(check_car_s - car_s ) < 30) 
+                {
+                  car_left =true;
+                  cout << "there is a car to the left" << endl;
+                }
+              }
+
+              else if (d < (2+4*lane+2) +4 && d > (2+4*lane-2) +4) 
+              {
+                double vx = sensor_fusion[i][3];
+                double vy = sensor_fusion[i][ 4];
+                double check_speed = sqrt(vx*vx+vy*vy); 
+                double check_car_s = sensor_fusion[i][5]; 
+
+                check_car_s += ((double)prev_size*.02*check_speed); //if using previous points can project s value out
+                //check s value greater than mine and s gap 
+                if (abs(check_car_s - car_s ) < 30) 
+                {
+                  car_right =true; 
+                  cout << "there is a car to the right" << endl;
+                }
+              }
+
+            }
+
+            if (too_close && !car_left && lane > 0)
+            {
+              --lane;
+            } 
+            else if (too_close && !car_right && lane < 2)
+            {
+              ++lane;
+            }
+
 
           	json msgJson;
 
@@ -340,6 +412,16 @@ int main() {
             //Add the remaining points to the new path 
             for(int i =1; i< 50 - previous_path_x.size(); i++)
             {
+
+              if (too_close) 
+              {
+                ref_vel -= .224; 
+              }
+              else if (ref_vel < 49.5)
+              {
+                ref_vel += .224;
+              }
+
               double N = (target_dist/(.02*ref_vel/2.24));
               double x_point = x_add_on +(target_x)/N;
               double y_point = s(x_point);
@@ -359,8 +441,6 @@ int main() {
 
               next_x_vals.push_back(x_point);
               next_y_vals.push_back(y_point);
-
-              cout <<x_point <<" "<< y_point<< endl; 
 
             }
 
